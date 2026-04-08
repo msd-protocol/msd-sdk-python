@@ -49,17 +49,64 @@ def _to_native_python_hard(data):
 # Typed data: dicts with '__type' represent specific Zef types, not plain dicts
 # =============================================================================
 
-# Types recognized as typed data values.
-# A dict with '__type' in this set is treated as that specific data type.
+import re
+
+# All known valid __type names (Zef types expressible as typed dicts)
 TYPED_DATA_TYPES = frozenset({
+    'PngImage', 'JpgImage', 'WebpImage', 'SvgImage',
+    'PDF', 'WordDocument', 'ExcelDocument', 'PowerpointDocument',
+    'Set', 'Bytes', 'Time', 'MsdHash',
+})
+
+# Pattern for valid entity type names: ET.<valid_python_identifier>
+_ENTITY_TYPE_RE = re.compile(r'^ET\.[A-Za-z_][A-Za-z0-9_]*$')
+
+# Types that support file embedding (sign_and_embed)
+_FILE_EMBEDDABLE_TYPES = frozenset({
     'PngImage', 'JpgImage', 'WebpImage', 'SvgImage',
     'PDF', 'WordDocument', 'ExcelDocument', 'PowerpointDocument',
 })
 
 
+def _is_valid_type_name(name: str) -> bool:
+    """Check if a __type value is valid (known type or valid ET.* entity type)."""
+    if name in TYPED_DATA_TYPES:
+        return True
+    if _ENTITY_TYPE_RE.match(name):
+        return True
+    return False
+
+
+def _validate_typed_values(data):
+    """
+    Recursively walk data and validate all __type fields.
+    
+    Raises ValueError with a clear message if any __type is invalid.
+    """
+    if isinstance(data, dict):
+        if '__type' in data:
+            t = data['__type']
+            if not isinstance(t, str):
+                raise ValueError(
+                    f"'__type' must be a string, got {type(t).__name__}: {t!r}"
+                )
+            if not _is_valid_type_name(t):
+                raise ValueError(
+                    f"Invalid '__type': '{t}'. "
+                    f"Allowed types: {sorted(TYPED_DATA_TYPES)} "
+                    f"or entity types matching 'ET.<ValidPythonIdentifier>' "
+                    f"(e.g. 'ET.Person', 'ET.Invoice')."
+                )
+        for v in data.values():
+            _validate_typed_values(v)
+    elif isinstance(data, (list, tuple)):
+        for item in data:
+            _validate_typed_values(item)
+
+
 def _is_typed_data(data) -> bool:
-    """Check if data is a typed dict (has __type in TYPED_DATA_TYPES)."""
-    return isinstance(data, dict) and data.get('__type') in TYPED_DATA_TYPES
+    """Check if data is a typed file dict that supports file embedding."""
+    return isinstance(data, dict) and data.get('__type') in _FILE_EMBEDDABLE_TYPES
 
 
 def _typed_dict_to_zef(data: dict):
@@ -175,6 +222,8 @@ def create_granule(data, metadata: dict, key: dict) -> dict:
         }
     """
     import zef
+    _validate_typed_values(data)
+    _validate_typed_values(metadata)
     # If typed data, convert to Zef type first
     if _is_typed_data(data):
         data = _typed_dict_to_zef(data)
@@ -210,6 +259,7 @@ def content_hash(data) -> dict:
         }
     """
     import zef
+    _validate_typed_values(data)
     # If typed data, convert to Zef type first
     if _is_typed_data(data):
         data = _typed_dict_to_zef(data)
@@ -419,9 +469,11 @@ def sign_and_embed(data: dict, metadata: dict, key: dict) -> dict:
     """
     import zef
     
+    _validate_typed_values(data)
+    _validate_typed_values(metadata)
     if not _is_typed_data(data):
         raise ValueError(
-            f"sign_and_embed expects a typed dict with '__type' in {sorted(TYPED_DATA_TYPES)}. "
+            f"sign_and_embed expects a typed file dict with '__type' in {sorted(_FILE_EMBEDDABLE_TYPES)}. "
             f"Got: {data.get('__type', '<missing>')}"
         )
     
@@ -470,6 +522,9 @@ def sign_and_embed_dict(data: dict, metadata: dict, key: dict) -> dict:
     
     if not isinstance(metadata, dict):
         raise ValueError("Metadata must be a dictionary")
+    
+    _validate_typed_values(data)
+    _validate_typed_values(metadata)
 
     timestamp = zef.now()
     key_internal = zef.from_json_like(key)
