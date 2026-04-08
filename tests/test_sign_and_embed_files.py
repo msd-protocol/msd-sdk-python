@@ -139,11 +139,14 @@ def run_file_tests(test_cases):
     """Test sign_and_embed for file types."""
     failed = []
     
+    import base64
+    
     # Use a minimal PNG we can always generate
     png_bytes = _create_minimal_png()
+    png_b64 = base64.b64encode(png_bytes).decode()
     
     # Test: sign_and_embed + verify round-trip
-    file_data = {'type': 'png', 'content': png_bytes}
+    file_data = {'__type': 'PngImage', 'data': png_b64}
     metadata = {'creator': 'test', 'format': 'png'}
     
     try:
@@ -152,21 +155,21 @@ def run_file_tests(test_cases):
         failed.append({'description': 'Sign and verify file round-trip', 'error': f'sign_and_embed raised: {e}'})
         return failed
     
-    if not isinstance(signed, dict) or 'type' not in signed or 'content' not in signed:
+    if not isinstance(signed, dict) or '__type' not in signed or 'data' not in signed:
         failed.append({'description': 'Sign and verify file round-trip', 'error': f'Invalid return structure'})
         return failed
     
-    if signed['type'] != 'png':
-        failed.append({'description': 'Sign and verify file round-trip', 'error': f'Type changed: {signed["type"]}'})
+    if signed['__type'] != 'PngImage':
+        failed.append({'description': 'Sign and verify file round-trip', 'error': f'Type changed: {signed["__type"]}'})
         return failed
     
-    if not isinstance(signed['content'], bytes):
-        failed.append({'description': 'Sign and verify file round-trip', 'error': f'Content not bytes: {type(signed["content"])}'})
+    if not isinstance(signed['data'], str):
+        failed.append({'description': 'Sign and verify file round-trip', 'error': f'Data not str: {type(signed["data"])}'})
         return failed
     
-    # Signed content should be larger (has embedded data)
-    if len(signed['content']) <= len(png_bytes):
-        failed.append({'description': 'Sign and verify file round-trip', 'error': 'Signed content not larger than original'})
+    # Signed data (base64) should be larger (has embedded data)
+    if len(signed['data']) <= len(png_b64):
+        failed.append({'description': 'Sign and verify file round-trip', 'error': 'Signed data not larger than original'})
         return failed
     
     # Verify the signed file
@@ -202,16 +205,16 @@ def run_file_tests(test_cases):
         failed.append({'description': 'Strip signature returns usable content', 'error': f'strip raised: {e}'})
         return failed
     
-    if stripped['type'] != 'png':
-        failed.append({'description': 'Strip signature returns usable content', 'error': f'Type changed after strip: {stripped["type"]}'})
+    if stripped['__type'] != 'PngImage':
+        failed.append({'description': 'Strip signature returns usable content', 'error': f'Type changed after strip: {stripped["__type"]}'})
         return failed
     
-    if not isinstance(stripped['content'], bytes):
-        failed.append({'description': 'Strip signature returns usable content', 'error': f'Content not bytes after strip'})
+    if not isinstance(stripped['data'], str):
+        failed.append({'description': 'Strip signature returns usable content', 'error': f'Data not str after strip'})
         return failed
     
     # Stripped should be smaller than signed
-    if len(stripped['content']) >= len(signed['content']):
+    if len(stripped['data']) >= len(signed['data']):
         failed.append({'description': 'Strip signature returns usable content', 'error': 'Stripped not smaller than signed'})
         return failed
     

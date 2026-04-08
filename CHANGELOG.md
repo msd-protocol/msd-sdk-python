@@ -27,6 +27,25 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
   **Migration:** Replace `msd.content_hash(x)` with `msd.content_hash(x)['hash']` where a plain hex string is needed.
 
+- **File data now uses typed dicts with `__type` instead of `{'type': ..., 'content': bytes}`.**
+
+  Before (0.1.7):
+  ```python
+  msd.sign_and_embed({'type': 'png', 'content': png_bytes}, metadata, key)
+  # returned: {'type': 'png', 'content': signed_bytes}
+  ```
+
+  After:
+  ```python
+  import base64
+  msd.sign_and_embed({'__type': 'PngImage', 'data': base64.b64encode(png_bytes).decode()}, metadata, key)
+  # returns: {'__type': 'PngImage', 'data': '<base64>'}
+  ```
+
+  All file functions (`sign_and_embed`, `verify`, `extract_metadata`, `extract_signature`, `strip_metadata_and_signature`, `content_hash`, `create_granule`) now use the typed dict format. Supported types: `PngImage`, `JpgImage`, `WebpImage`, `SvgImage`, `PDF`, `WordDocument`, `ExcelDocument`, `PowerpointDocument`.
+
+  See [docs/typed-data.md](docs/typed-data.md) for the full guide.
+
 ---
 
 ## [0.1.7] — 2026-02-19

@@ -2,6 +2,7 @@
 
 import json
 import time
+import base64
 
 
 def _to_native_python_hard(data):
@@ -44,7 +45,73 @@ def _to_native_python_hard(data):
     raise ValueError(f"Unsupported type in _to_native_python_hard: {ptype}")
 
 
+# =============================================================================
+# Typed data: dicts with '__type' represent specific Zef types, not plain dicts
+# =============================================================================
 
+# Types recognized as typed data values.
+# A dict with '__type' in this set is treated as that specific data type.
+TYPED_DATA_TYPES = frozenset({
+    'PngImage', 'JpgImage', 'WebpImage', 'SvgImage',
+    'PDF', 'WordDocument', 'ExcelDocument', 'PowerpointDocument',
+})
+
+
+def _is_typed_data(data) -> bool:
+    """Check if data is a typed dict (has __type in TYPED_DATA_TYPES)."""
+    return isinstance(data, dict) and data.get('__type') in TYPED_DATA_TYPES
+
+
+def _typed_dict_to_zef(data: dict):
+    """
+    Convert a typed dict to the corresponding Zef type.
+    
+    Input format: {'__type': 'PngImage', 'data': '<base64 or text>'}
+    """
+    import zef
+    t = data['__type']
+    raw = data['data']
+    match t:
+        case 'PngImage':            return zef.PngImage(base64.b64decode(raw))
+        case 'JpgImage':            return zef.JpgImage(base64.b64decode(raw))
+        case 'WebpImage':           return zef.WebpImage(base64.b64decode(raw))
+        case 'SvgImage':            return zef.SvgImage(raw)  # text, not base64
+        case 'PDF':                 return zef.PDF(base64.b64decode(raw))
+        case 'WordDocument':        return zef.ET.WordDocument(content=base64.b64decode(raw))
+        case 'ExcelDocument':       return zef.ET.ExcelDocument(content=base64.b64decode(raw))
+        case 'PowerpointDocument':  return zef.ET.PowerpointDocument(content=base64.b64decode(raw))
+        case _:
+            raise ValueError(f"Unknown typed data type: '{t}'")
+
+
+def _zef_to_typed_dict(zef_obj) -> dict:
+    """
+    Convert a Zef file type back to a typed dict.
+    
+    Output format: {'__type': 'PngImage', 'data': '<base64 or text>'}
+    """
+    import zef
+    pt = zef.primary_type(zef_obj)
+    
+    # Binary image types
+    if pt == zef.PngImage:
+        return {'__type': 'PngImage', 'data': base64.b64encode(bytes(zef_obj.data_as_bytes())).decode()}
+    if pt == zef.JpgImage:
+        return {'__type': 'JpgImage', 'data': base64.b64encode(bytes(zef_obj.data_as_bytes())).decode()}
+    if pt == zef.WebpImage:
+        return {'__type': 'WebpImage', 'data': base64.b64encode(bytes(zef_obj.data_as_bytes())).decode()}
+    if pt == zef.PDF:
+        return {'__type': 'PDF', 'data': base64.b64encode(bytes(zef_obj.data_as_bytes())).decode()}
+    
+    # Text-based types
+    if pt == zef.SvgImage:
+        return {'__type': 'SvgImage', 'data': str(zef_obj)}
+    
+    # Entity types (content attribute)
+    type_name = str(pt)
+    if type_name.startswith('ET.'):
+        type_name = type_name[3:]
+    return {'__type': type_name, 'data': base64.b64encode(bytes(zef_obj.content)).decode()}
 
 
 def key_from_env(env_var_name: str = "MSD_PRIVATE_KEY") -> dict:
@@ -108,6 +175,9 @@ def create_granule(data, metadata: dict, key: dict) -> dict:
         }
     """
     import zef
+    # If typed data, convert to Zef type first
+    if _is_typed_data(data):
+        data = _typed_dict_to_zef(data)
     timestamp = zef.now()
     key_internal = zef.from_json_like(key)
     granule_internal = zef.create_signed_granule(data, metadata, timestamp, key_internal)
@@ -130,7 +200,7 @@ def content_hash(data) -> dict:
         data: The data to hash. Can be:
               - Primitives: str, int, float, bool, None
               - Aggregates: dict, list (uses Merkle hashing of elements)
-              - Entity types: ET.* wrapped dicts
+              - Typed data: dicts with '__type' (e.g. PngImage, PDF)
     
     Returns:
         A dict with structure:
@@ -140,6 +210,9 @@ def content_hash(data) -> dict:
         }
     """
     import zef
+    # If typed data, convert to Zef type first
+    if _is_typed_data(data):
+        data = _typed_dict_to_zef(data)
     return {
         '__type': 'MsdHash',
         'hash': bytes(zef.msd_hash(data)).hex(),
@@ -222,53 +295,16 @@ def _verify_dict(signed_dict_data: dict) -> bool:
     return bool(result)
 
 
-def _parse_to_zef_type(data: dict):
-    """
-    Parse a file dict to its corresponding Zef type.
-    
-    Args:
-        data: A dict with 'type' and 'content' keys.
-    
-    Returns:
-        The corresponding Zef type (PngImage, JpgImage, PDF, etc.)
-    
-    Raises:
-        ValueError: If the type is not supported.
-    """
-    import zef
-    
-    match data['type']:
-        case 'png': return zef.PngImage(data['content'])
-        case 'jpg': return zef.JpgImage(data['content'])
-        case 'pdf': return zef.PDF(data['content'])
-        case 'word_document': return zef.ET.WordDocument(content=data['content'])
-        case 'excel_document': return zef.ET.ExcelDocument(content=data['content'])
-        case 'powerpoint_document': return zef.ET.PowerpointDocument(content=data['content'])
-        case _: raise ValueError(
-            f"Unsupported file type: '{data['type']}'. "
-            f"Supported types: png, jpg, pdf, word_document, excel_document, powerpoint_document"
-        )
-
-
 def _verify_file(signed_data: dict) -> bool:
     """
-    Verify the embedded signature in a signed file.
+    Verify the embedded signature in a signed file (typed dict).
     
     Internal function - use verify() for the public API.
-    
-    Args:
-        signed_data: A dict with 'type' and 'content' keys containing a signed file.
-    
-    Returns:
-        True if the signature is valid, False otherwise.
-    
-    Raises:
-        ValueError: If no embedded signature is found or file type is unsupported.
     """
     import zef
     
-    # 1. Parse to Zef type
-    typed_file = _parse_to_zef_type(signed_data)
+    # 1. Convert typed dict to Zef type
+    typed_file = _typed_dict_to_zef(signed_data)
     
     # 2. Extract embedded granule data (without 'data' field)
     embedded_bytes = typed_file | zef.extract_embedded_data | zef.collect
@@ -325,7 +361,7 @@ def verify(data: dict) -> bool:
         assert msd.verify(signed_dict) == True
         
         # Verify a signed file
-        signed_png = msd.sign_and_embed({'type': 'png', 'content': bytes}, metadata, key)
+        signed_png = msd.sign_and_embed({'__type': 'PngImage', 'data': base64_str}, metadata, key)
         assert msd.verify(signed_png) == True
     """
     # Handle both native Python dicts and Zef dict types
@@ -344,7 +380,11 @@ def verify(data: dict) -> bool:
     if type_field == 'ET.SignedGranule':
         return _verify_granule(data)
     
-    # Case 2: Dict signed with sign_and_embed_dict (has __msd key)
+    # Case 2: Typed data with embedded signature (PngImage, PDF, etc.)
+    if type_field in TYPED_DATA_TYPES:
+        return _verify_file(data)
+    
+    # Case 3: Dict signed with sign_and_embed_dict (has __msd key)
     has_msd = False
     try:
         _ = data['__msd']
@@ -355,27 +395,10 @@ def verify(data: dict) -> bool:
     if has_msd:
         return _verify_dict(data)
     
-    # Case 3: File dict with 'type' and 'content'
-    has_type = False
-    has_content = False
-    try:
-        _ = data['type']
-        has_type = True
-    except (KeyError, TypeError):
-        pass
-    try:
-        _ = data['content']
-        has_content = True
-    except (KeyError, TypeError):
-        pass
-    
-    if has_type and has_content:
-        return _verify_file(data)
-    
     raise ValueError(
         "verify() expects a SignedGranule dict (with '__type': 'ET.SignedGranule'), "
-        "a dict with embedded signature (with '__msd' key), "
-        "or a file dict (with 'type' and 'content' keys). "
+        "a typed data dict (with '__type' in " + str(sorted(TYPED_DATA_TYPES)) + "), "
+        "or a dict with embedded signature (with '__msd' key). "
         "Got keys: " + str(list(data.keys()))
     )
 
@@ -383,37 +406,41 @@ def verify(data: dict) -> bool:
 
 
 def sign_and_embed(data: dict, metadata: dict, key: dict) -> dict:
-    import zef
-    match data['type']:
-        case 'png': data_ = zef.PngImage(data['content'])
-        case 'jpg': data_ = zef.JpgImage(data['content'])
-        case 'pdf': data_ = zef.PDF(data['content'])
-        case 'word_document': data_ = zef.ET.WordDocument(content=data['content'])
-        case 'excel_document': data_ = zef.ET.ExcelDocument(content=data['content'])
-        case 'powerpoint_document': data_ = zef.ET.PowerpointDocument(content=data['content'])
-        case _: raise ValueError(f"Unsupported type in msd_sdk.sign_and_embed: {data['type']}")
+    """
+    Sign data and embed the signature into it.
     
-    # First strip any existing embedded data to ensure idempotent behavior
+    Accepts a typed dict with '__type' and 'data' keys:
+        {'__type': 'PngImage', 'data': '<base64>'}
+    
+    Returns the same typed dict format with the signature embedded in the content.
+    
+    Supported types: PngImage, JpgImage, WebpImage, SvgImage, PDF,
+    WordDocument, ExcelDocument, PowerpointDocument.
+    """
+    import zef
+    
+    if not _is_typed_data(data):
+        raise ValueError(
+            f"sign_and_embed expects a typed dict with '__type' in {sorted(TYPED_DATA_TYPES)}. "
+            f"Got: {data.get('__type', '<missing>')}"
+        )
+    
+    data_ = _typed_dict_to_zef(data)
+    
+    # Strip any existing embedded data to ensure idempotent behavior
     data_ = zef.strip_embedded_data(data_)
     
     timestamp = zef.now()
     key_internal = zef.from_json_like(key)
 
-    # this should NOT contain the actual image data
+    # Embed signature data (without the actual file content)
     binary_data_to_embed = (zef.create_signed_granule(data_, metadata, timestamp, key_internal) 
         | zef.remove('data') 
         | zef.to_bytes
         | zef.collect
     )    
     signed = zef.embed_data(data_, binary_data_to_embed)
-    match data['type']:
-        case 'png': return {'type': 'png', 'content': bytes(signed.data_as_bytes())}
-        case 'jpg': return {'type': 'jpg', 'content': bytes(signed.data_as_bytes())}
-        case 'pdf': return {'type': 'pdf', 'content': bytes(signed.data_as_bytes())}
-        case 'word_document': return {'type': 'word_document', 'content': bytes(signed.content)}
-        case 'excel_document': return {'type': 'excel_document', 'content': bytes(signed.content)}
-        case 'powerpoint_document': return {'type': 'powerpoint_document', 'content': bytes(signed.content)}
-        case _: raise ValueError(f"Unsupported image type: {data['type']}")
+    return _zef_to_typed_dict(signed)
 
 
 
@@ -512,12 +539,12 @@ def _extract_msd_from_dict(signed_dict_data: dict) -> dict:
 def extract_metadata(signed_data: dict) -> dict:
     """
     Extract metadata from a signed dict (Unicode steganography) or a signed
-    binary file (PNG, JPG, PDF, etc.).
+    typed data dict (PngImage, PDF, etc.).
     
     Args:
         signed_data: Either:
             - A dict with an '__msd' key (from sign_and_embed_dict), or
-            - A dict with 'type' and 'content' keys (binary file).
+            - A typed data dict with '__type' (from sign_and_embed).
     
     Returns:
         The metadata dictionary that was attached during signing.
@@ -532,15 +559,8 @@ def extract_metadata(signed_data: dict) -> dict:
         msd_data = _extract_msd_from_dict(signed_data)
         return msd_data.get('metadata', {})
     
-    # Case 2: Binary file with embedded signature
-    match signed_data['type']:
-        case 'png': data_ = zef.PngImage(signed_data['content'])
-        case 'jpg': data_ = zef.JpgImage(signed_data['content'])
-        case 'pdf': data_ = zef.PDF(signed_data['content'])
-        case 'word_document': data_ = zef.ET.WordDocument(content=signed_data['content'])
-        case 'excel_document': data_ = zef.ET.ExcelDocument(content=signed_data['content'])
-        case 'powerpoint_document': data_ = zef.ET.PowerpointDocument(content=signed_data['content'])
-        case _: raise ValueError(f"Unsupported type: {signed_data['type']}")
+    # Case 2: Typed data with embedded signature
+    data_ = _typed_dict_to_zef(signed_data)
     
     embedded_bytes = data_ | zef.extract_embedded_data | zef.collect
     
@@ -560,12 +580,12 @@ def extract_metadata(signed_data: dict) -> dict:
 def extract_signature(signed_data: dict) -> dict:
     """
     Extract signature information from a signed dict (Unicode steganography)
-    or a signed binary file (PNG, JPG, PDF, etc.).
+    or a signed typed data dict (PngImage, PDF, etc.).
     
     Args:
         signed_data: Either:
             - A dict with an '__msd' key (from sign_and_embed_dict), or
-            - A dict with 'type' and 'content' keys (binary file).
+            - A typed data dict with '__type' (from sign_and_embed).
     
     Returns:
         A dictionary with signature information including:
@@ -585,15 +605,8 @@ def extract_signature(signed_data: dict) -> dict:
             'key': msd_data.get('key'),
         }
     
-    # Case 2: Binary file with embedded signature
-    match signed_data['type']:
-        case 'png': data_ = zef.PngImage(signed_data['content'])
-        case 'jpg': data_ = zef.JpgImage(signed_data['content'])
-        case 'pdf': data_ = zef.PDF(signed_data['content'])
-        case 'word_document': data_ = zef.ET.WordDocument(content=signed_data['content'])
-        case 'excel_document': data_ = zef.ET.ExcelDocument(content=signed_data['content'])
-        case 'powerpoint_document': data_ = zef.ET.PowerpointDocument(content=signed_data['content'])
-        case _: raise ValueError(f"Unsupported type: {signed_data['type']}")
+    # Case 2: Typed data with embedded signature
+    data_ = _typed_dict_to_zef(signed_data)
     
     embedded_bytes = data_ | zef.extract_embedded_data | zef.collect
     
@@ -615,37 +628,19 @@ def extract_signature(signed_data: dict) -> dict:
 
 def strip_metadata_and_signature(signed_data: dict) -> dict:
     """
-    Strip the embedded metadata and signature from a signed media file,
-    returning the original file content.
+    Strip the embedded metadata and signature from a signed file,
+    returning the original content as a typed dict.
     
     Args:
-        signed_data: A dict with 'type' and 'content' keys, where content
-                     is the binary data of the signed file.
+        signed_data: A typed data dict with '__type' (from sign_and_embed).
     
     Returns:
-        A dict with 'type' and 'content' keys, where content is the
-        original file data with all embedded MSD data removed.
+        A typed data dict with the same '__type' but clean content
+        (all embedded MSD data removed).
     """
     import zef
     
-    match signed_data['type']:
-        case 'png': data_ = zef.PngImage(signed_data['content'])
-        case 'jpg': data_ = zef.JpgImage(signed_data['content'])
-        case 'pdf': data_ = zef.PDF(signed_data['content'])
-        case 'word_document': data_ = zef.ET.WordDocument(content=signed_data['content'])
-        case 'excel_document': data_ = zef.ET.ExcelDocument(content=signed_data['content'])
-        case 'powerpoint_document': data_ = zef.ET.PowerpointDocument(content=signed_data['content'])
-        case _: raise ValueError(f"Unsupported type: {signed_data['type']}")
-    
-    # Call strip_embedded_data as function, not through pipe
+    data_ = _typed_dict_to_zef(signed_data)
     stripped = zef.strip_embedded_data(data_)
-    
-    match signed_data['type']:
-        case 'png': return {'type': 'png', 'content': bytes(stripped.data_as_bytes())}
-        case 'jpg': return {'type': 'jpg', 'content': bytes(stripped.data_as_bytes())}
-        case 'pdf': return {'type': 'pdf', 'content': bytes(stripped.data_as_bytes())}
-        case 'word_document': return {'type': 'word_document', 'content': bytes(stripped.content)}
-        case 'excel_document': return {'type': 'excel_document', 'content': bytes(stripped.content)}
-        case 'powerpoint_document': return {'type': 'powerpoint_document', 'content': bytes(stripped.content)}
-        case _: raise ValueError(f"Unsupported type: {signed_data['type']}")
+    return _zef_to_typed_dict(stripped)
 

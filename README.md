@@ -6,6 +6,8 @@ Python SDK for Meta Structured Data.
 
 🔑 **[Key Management Guide](docs/key-management.md)** for generating keys, trust hierarchies, and security best practices.
 
+📁 **[Typed Data Guide](docs/typed-data.md)** for working with images, PDFs, and documents.
+
 ## Installation
 
 ```bash
@@ -186,8 +188,10 @@ is_valid = msd.verify(signed_dict)  # False
 #### Verifying a Signed File
 
 ```python
+import base64
+
 signed_png = msd.sign_and_embed(
-    {'type': 'png', 'content': png_bytes},
+    {'__type': 'PngImage', 'data': base64.b64encode(png_bytes).decode()},
     {'author': 'Alice'},
     my_key
 )
@@ -195,7 +199,7 @@ signed_png = msd.sign_and_embed(
 is_valid = msd.verify(signed_png)  # True
 ```
 
-This works for all supported file types: PNG, JPG, PDF, DOCX, XLSX, PPTX.
+This works for all supported file types: PngImage, JpgImage, WebpImage, SvgImage, PDF, WordDocument, ExcelDocument, PowerpointDocument.
 
 #### Behavior
 
@@ -246,7 +250,7 @@ sig_info = msd.extract_signature(signed_dict)
 # => {"signature": {...}, "signature_time": {...}, "key": {...}}
 ```
 
-Both `extract_metadata` and `extract_signature` automatically detect whether the input is a signed dict (has `__msd` key) or a signed binary file (has `type` and `content` keys) and handle both cases.
+Both `extract_metadata` and `extract_signature` automatically detect whether the input is a signed dict (has `__msd` key) or a signed file (has `__type` matching a supported file type) and handle both cases.
 
 #### Verifying a Signed Dict
 
@@ -276,8 +280,10 @@ is_valid = msd.verify(signed_dict)  # False
 - A MSD signature applies to exactly one fixed content version of a document. Editing the content in the slightest way invalidates the signature
 
 ```python
+import base64
+
 signed_png_image = msd.sign_and_embed(
-  data={'type': 'png', 'content': png_binary_data},
+  data={'__type': 'PngImage', 'data': base64.b64encode(png_binary_data).decode()},
   metadata={'creator': 'Alice', 'description': 'sample image'},
   key=my_msd_key
 )
@@ -285,16 +291,20 @@ signed_png_image = msd.sign_and_embed(
 
 The returned image with the embedded signature is also of the form
 ```python
-{'type': 'png', 'content': signed_png_binary_data}
+{'__type': 'PngImage', 'data': '<base64-encoded signed bytes>'}
 ```
 
-The same syntax works for other supported formats with respective MIME types:
-- `png`
-- `jpg`
-- `pdf`
-- `word_document`
-- `excel_document`
-- `powerpoint_document`
+Supported `__type` values:
+- `PngImage`
+- `JpgImage`
+- `WebpImage`
+- `SvgImage`
+- `PDF`
+- `WordDocument`
+- `ExcelDocument`
+- `PowerpointDocument`
+
+See the **[Typed Data Guide](docs/typed-data.md)** for details and examples.
 
 #### Extracting and Verifying Embedded Signatures
 
