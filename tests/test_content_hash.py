@@ -86,9 +86,9 @@ def run_tests(test_cases):
         args = test['args']
         evaluated = msd.content_hash(*args)
         
-        # Compare with expected - use direct access, not .get()
+        # content_hash returns {'__type': 'MsdHash', 'hash': '<hex>'}
         expected = test['expected']
-        matches = (expected == evaluated)
+        matches = (evaluated['__type'] == 'MsdHash' and evaluated['hash'] == expected)
         if not matches:
             failed_tests.append({
                 'description': test['description'],

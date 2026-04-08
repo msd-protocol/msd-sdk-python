@@ -207,7 +207,7 @@ This works for all supported file types: PNG, JPG, PDF, DOCX, XLSX, PPTX.
 
 ```python
 my_content_hash = msd.content_hash(data)
-# Returns: String(hash='🪨-523d1d9f304a40f30aa741cbdd66cad80f65b9db6c6cba66f2e149e0c2907f29')
+# Returns: {'__type': 'MsdHash', 'hash': '523d1d9f304a40f30aa741cbdd66cad80f65b9db6c6cba66f2e149e0c2907f29'}
 ```
 
 **About Merkle Hashing**

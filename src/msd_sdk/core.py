@@ -115,7 +115,7 @@ def create_granule(data, metadata: dict, key: dict) -> dict:
     return _to_native_python_hard(result)
 
 
-def content_hash(data) -> str:
+def content_hash(data) -> dict:
     """
     Compute the MSD content hash (BLAKE3-based) of data.
     
@@ -133,10 +133,17 @@ def content_hash(data) -> str:
               - Entity types: ET.* wrapped dicts
     
     Returns:
-        A 64-character hexadecimal string representing the 32-byte hash.
+        A dict with structure:
+        {
+            '__type': 'MsdHash',
+            'hash': '<64-character hex string>'
+        }
     """
     import zef
-    return bytes(zef.msd_hash(data)).hex()
+    return {
+        '__type': 'MsdHash',
+        'hash': bytes(zef.msd_hash(data)).hex(),
+    }
 
 
 def _verify_granule(granule: dict) -> bool:
