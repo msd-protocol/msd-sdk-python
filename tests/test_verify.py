@@ -10,20 +10,20 @@ test_cases = [
     args=[
       {
         '__type': 'ET.SignedGranule',
-        'data': 'Hello, Meta Structured Data!',
-        'metadata': {'creator': 'Alice', 'description': 'sample data'},
-        'signature_time': {'__type': 'Time', 'zef_unix_time': '1775630689'},
+        'data': 'hello signable world',
+        'metadata': {'author': 'test-suite', 'version': '1.0', 'description': 'A test document for signature verification'},
+        'signature_time': {'__type': 'Time', 'zef_unix_time': '1775632796'},
         'signature': {
           '__type': 'ET.Ed25519Signature',
           'signature': (
-            '🔏-7aa0801f3eaec65ffc4aa38c316ef3fcb56d987ff047cbbca3f80646b168ef2660b66d1373745'
-            '305d43ab004f36b33db6b9e58d6436fa242bbd7f6752109c70c'
+            '🔏-f5802869281af8cb065199f585bcff421e21a8d3421ea3406682ff428c1a7a89bea86b7bb7eeb5'
+            'e5d181e43d3c98544ce25aeba15fd08360d681803cef058403'
           )
         },
         'key': {
           '__type': 'ET.Ed25519KeyPair',
-          '__uid': '🍃-8d1dc8766070c87a4bb1',
-          'public_key': '🔑-8614d100b3cdb5ff6c37c846760dd1990f637994bd985d9486f212133bfd6284'
+          '__uid': '🍃-a3fe2c45e2b59d0c2220',
+          'public_key': '🔑-3b1c90f06a5361b118bb7799e8386ecaacacec706cd7b6e2eade8c1ad32e9c26'
         }
       }
     ],
@@ -35,19 +35,19 @@ test_cases = [
       {
         '__type': 'ET.SignedGranule',
         'data': 'TAMPERED DATA',
-        'metadata': {'creator': 'Alice'},
-        'signature_time': {'__type': 'Time', 'zef_unix_time': '1775630689'},
+        'metadata': {'author': 'test-suite', 'version': '1.0', 'description': 'A test document for signature verification'},
+        'signature_time': {'__type': 'Time', 'zef_unix_time': '1775632796'},
         'signature': {
           '__type': 'ET.Ed25519Signature',
           'signature': (
-            '🔏-7aa0801f3eaec65ffc4aa38c316ef3fcb56d987ff047cbbca3f80646b168ef2660b66d1373745'
-            '305d43ab004f36b33db6b9e58d6436fa242bbd7f6752109c70c'
+            '🔏-f5802869281af8cb065199f585bcff421e21a8d3421ea3406682ff428c1a7a89bea86b7bb7eeb5'
+            'e5d181e43d3c98544ce25aeba15fd08360d681803cef058403'
           )
         },
         'key': {
           '__type': 'ET.Ed25519KeyPair',
-          '__uid': '🍃-8d1dc8766070c87a4bb1',
-          'public_key': '🔑-8614d100b3cdb5ff6c37c846760dd1990f637994bd985d9486f212133bfd6284'
+          '__uid': '🍃-a3fe2c45e2b59d0c2220',
+          'public_key': '🔑-3b1c90f06a5361b118bb7799e8386ecaacacec706cd7b6e2eade8c1ad32e9c26'
         }
       }
     ],
@@ -58,20 +58,20 @@ test_cases = [
     args=[
       {
         '__type': 'ET.SignedGranule',
-        'data': 'Hello, Meta Structured Data!',
+        'data': 'hello signable world',
         'metadata': {'creator': 'Eve'},
-        'signature_time': {'__type': 'Time', 'zef_unix_time': '1775630689'},
+        'signature_time': {'__type': 'Time', 'zef_unix_time': '1775632796'},
         'signature': {
           '__type': 'ET.Ed25519Signature',
           'signature': (
-            '🔏-7aa0801f3eaec65ffc4aa38c316ef3fcb56d987ff047cbbca3f80646b168ef2660b66d1373745'
-            '305d43ab004f36b33db6b9e58d6436fa242bbd7f6752109c70c'
+            '🔏-f5802869281af8cb065199f585bcff421e21a8d3421ea3406682ff428c1a7a89bea86b7bb7eeb5'
+            'e5d181e43d3c98544ce25aeba15fd08360d681803cef058403'
           )
         },
         'key': {
           '__type': 'ET.Ed25519KeyPair',
-          '__uid': '🍃-8d1dc8766070c87a4bb1',
-          'public_key': '🔑-8614d100b3cdb5ff6c37c846760dd1990f637994bd985d9486f212133bfd6284'
+          '__uid': '🍃-a3fe2c45e2b59d0c2220',
+          'public_key': '🔑-3b1c90f06a5361b118bb7799e8386ecaacacec706cd7b6e2eade8c1ad32e9c26'
         }
       }
     ],
@@ -82,20 +82,20 @@ test_cases = [
     args=[
       {
         '__type': 'ET.SignedGranule',
-        'data': {'message': 'Hello', 'count': 42, 'nested': {'key': 'value'}},
-        'metadata': {'creator': 'Bob', 'schema': 'v1.0'},
-        'signature_time': {'__type': 'Time', 'zef_unix_time': '1775630689'},
+        'data': {'message': 'hello', 'count': 42, 'nested': {'a': 1}},
+        'metadata': {'author': 'test-suite'},
+        'signature_time': {'__type': 'Time', 'zef_unix_time': '1775632796'},
         'signature': {
           '__type': 'ET.Ed25519Signature',
           'signature': (
-            '🔏-6bcfd1f137e103577fcdeefc35333bc15773ec080322807a7b82233eb5267d31e921949278682'
-            'bbdb3e560948e892969bde19202e9feae36ca2dc9708b120f00'
+            '🔏-4035792d925fb2d5e5af072be0e7768edf8e6bd781ca41dc389e9a27b858f40a5d4f8436e55569'
+            'e0f3cab50f42ddb4233b194c3c4840d1e41cff23d059765106'
           )
         },
         'key': {
           '__type': 'ET.Ed25519KeyPair',
-          '__uid': '🍃-8d1dc8766070c87a4bb1',
-          'public_key': '🔑-8614d100b3cdb5ff6c37c846760dd1990f637994bd985d9486f212133bfd6284'
+          '__uid': '🍃-a3fe2c45e2b59d0c2220',
+          'public_key': '🔑-3b1c90f06a5361b118bb7799e8386ecaacacec706cd7b6e2eade8c1ad32e9c26'
         }
       }
     ],
@@ -106,9 +106,9 @@ test_cases = [
     args=[
       {
         '__type': 'ET.SignedGranule',
-        'data': 'Hello, Meta Structured Data!',
-        'metadata': {'creator': 'Alice', 'description': 'sample data'},
-        'signature_time': {'__type': 'Time', 'zef_unix_time': '1775630689'},
+        'data': 'hello signable world',
+        'metadata': {'author': 'test-suite', 'version': '1.0', 'description': 'A test document for signature verification'},
+        'signature_time': {'__type': 'Time', 'zef_unix_time': '1775632796'},
         'signature': {
           '__type': 'ET.Ed25519Signature',
           'signature': (
@@ -118,8 +118,8 @@ test_cases = [
         },
         'key': {
           '__type': 'ET.Ed25519KeyPair',
-          '__uid': '🍃-8d1dc8766070c87a4bb1',
-          'public_key': '🔑-8614d100b3cdb5ff6c37c846760dd1990f637994bd985d9486f212133bfd6284'
+          '__uid': '🍃-a3fe2c45e2b59d0c2220',
+          'public_key': '🔑-3b1c90f06a5361b118bb7799e8386ecaacacec706cd7b6e2eade8c1ad32e9c26'
         }
       }
     ],
@@ -130,19 +130,19 @@ test_cases = [
     args=[
       {
         '__type': 'ET.SignedGranule',
-        'data': 'Hello, Meta Structured Data!',
-        'metadata': {'creator': 'Alice', 'description': 'sample data'},
-        'signature_time': {'__type': 'Time', 'zef_unix_time': '1775630689'},
+        'data': 'hello signable world',
+        'metadata': {'author': 'test-suite', 'version': '1.0', 'description': 'A test document for signature verification'},
+        'signature_time': {'__type': 'Time', 'zef_unix_time': '1775632796'},
         'signature': {
           '__type': 'ET.Ed25519Signature',
           'signature': (
-            '🔏-7aa0801f3eaec65ffc4aa38c316ef3fcb56d987ff047cbbca3f80646b168ef2660b66d1373745'
-            '305d43ab004f36b33db6b9e58d6436fa242bbd7f6752109c70c'
+            '🔏-f5802869281af8cb065199f585bcff421e21a8d3421ea3406682ff428c1a7a89bea86b7bb7eeb5'
+            'e5d181e43d3c98544ce25aeba15fd08360d681803cef058403'
           )
         },
         'key': {
           '__type': 'ET.Ed25519KeyPair',
-          '__uid': '🍃-8d1dc8766070c87a4bb1',
+          '__uid': '🍃-a3fe2c45e2b59d0c2220',
           'public_key': '🔑-0000000000000000000000000000000000000000000000000000000000000000'
         }
       }
@@ -154,20 +154,20 @@ test_cases = [
     args=[
       {
         '__type': 'ET.SignedGranule',
-        'data': 'Hello, Meta Structured Data!',
-        'metadata': {'creator': 'Alice', 'description': 'sample data'},
+        'data': 'hello signable world',
+        'metadata': {'author': 'test-suite', 'version': '1.0', 'description': 'A test document for signature verification'},
         'signature_time': {'__type': 'Time', 'zef_unix_time': '9999999999'},
         'signature': {
           '__type': 'ET.Ed25519Signature',
           'signature': (
-            '🔏-7aa0801f3eaec65ffc4aa38c316ef3fcb56d987ff047cbbca3f80646b168ef2660b66d1373745'
-            '305d43ab004f36b33db6b9e58d6436fa242bbd7f6752109c70c'
+            '🔏-f5802869281af8cb065199f585bcff421e21a8d3421ea3406682ff428c1a7a89bea86b7bb7eeb5'
+            'e5d181e43d3c98544ce25aeba15fd08360d681803cef058403'
           )
         },
         'key': {
           '__type': 'ET.Ed25519KeyPair',
-          '__uid': '🍃-8d1dc8766070c87a4bb1',
-          'public_key': '🔑-8614d100b3cdb5ff6c37c846760dd1990f637994bd985d9486f212133bfd6284'
+          '__uid': '🍃-a3fe2c45e2b59d0c2220',
+          'public_key': '🔑-3b1c90f06a5361b118bb7799e8386ecaacacec706cd7b6e2eade8c1ad32e9c26'
         }
       }
     ],
