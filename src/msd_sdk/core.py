@@ -112,7 +112,7 @@ def create_granule(data, metadata: dict, key: dict) -> dict:
     key_internal = zef.from_json_like(key)
     granule_internal = zef.create_signed_granule(data, metadata, timestamp, key_internal)
     result = granule_internal | zef.to_json_like | zef.collect
-    return result
+    return _to_native_python_hard(result)
 
 
 def content_hash(data) -> str:

@@ -119,7 +119,9 @@ def run_tests(test_cases):
             continue
         
         # Check data matches input
-        if granule['data'] != data:
+        # Normalize nil → None since SDK returns native Python types
+        expected_data = None if data == nil else data
+        if granule['data'] != expected_data:
             failed_tests.append({
                 'description': test['description'],
                 'error': f'Data mismatch: expected {data}, got {granule["data"]}',
