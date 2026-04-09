@@ -11,10 +11,12 @@ Python SDK for Meta Structured Data.
 ## Installation
 
 ```bash
-pip install msd-sdk
+pip install msd-sdk --extra-index-url https://msd-protocol.org/simple/
 ```
 
-> **Note**: This SDK requires `zef-core` which is not yet publicly available. The import will fail until zef-core is installed.
+This installs both `msd-sdk` and its `zef` runtime dependency. The `--extra-index-url` flag tells pip to look for `zef` on the MSD package server (it's not on PyPI yet).
+
+> **Tip**: Add `--extra-index-url https://msd-protocol.org/simple/` to your `pip.conf` or `requirements.txt` to avoid typing it every time.
 
 ## Development: Building from Source
 

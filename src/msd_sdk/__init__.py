@@ -58,16 +58,20 @@ def _verify_zef_installation():
         import zef
     except ImportError:
         raise ImportError(
-            "msd-sdk requires the zef package (rust-based zef-core). "
-            "This is currently not publicly available yet. Coming soon."
+            "msd-sdk requires the 'zef' package.\n\n"
+            "Install with:\n"
+            "  pip install msd-sdk --extra-index-url https://msd-protocol.org/simple/\n\n"
+            "Or install zef directly:\n"
+            "  pip install https://msd-protocol.org/wheels/zef-0.1.29-cp310-abi3-manylinux_2_28_x86_64.whl  # Linux\n"
+            "  pip install https://msd-protocol.org/wheels/zef-0.1.29-cp310-abi3-macosx_11_0_arm64.whl      # macOS ARM\n"
         )
     
     # Check for msd_hash which is only available in rust-based zef
     if not hasattr(zef, 'msd_hash'):
         raise ImportError(
-            "msd-sdk requires the rust-based zef package (zef-core) with msd_hash support, "
-            "but the installed 'zef' package does not provide it. "
-            "The required Zef package is not publicly available yet. Coming soon."
+            "msd-sdk requires zef with msd_hash support (>= 0.1.29).\n\n"
+            "Update with:\n"
+            "  pip install --upgrade msd-sdk --extra-index-url https://msd-protocol.org/simple/\n"
         )
     
     return zef

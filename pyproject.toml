@@ -25,9 +25,9 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
 ]
-# Note: zef-core must be installed separately (not on PyPI yet)
-# The runtime check in __init__.py verifies correct zef is installed
-dependencies = []
+# Note: zef is hosted at msd-protocol.org (not yet on PyPI)
+# Install with: pip install msd-sdk --extra-index-url https://msd-protocol.org/simple/
+dependencies = ["zef>=0.1.29"]
 
 [project.urls]
 Homepage = "https://msd-protocol.org"
