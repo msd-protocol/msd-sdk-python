@@ -58,12 +58,11 @@ def _verify_zef_installation():
         import zef
     except ImportError:
         raise ImportError(
-            "msd-sdk requires the 'zef' package.\n\n"
-            "Install with:\n"
-            "  pip install msd-sdk --extra-index-url https://msd-protocol.org/simple/\n\n"
-            "Or install zef directly:\n"
-            "  pip install https://msd-protocol.org/wheels/zef-0.1.29-cp310-abi3-manylinux_2_28_x86_64.whl  # Linux\n"
-            "  pip install https://msd-protocol.org/wheels/zef-0.1.29-cp310-abi3-macosx_11_0_arm64.whl      # macOS ARM\n"
+            "msd-sdk requires 'zef' — a compiled runtime library.\n\n"
+            "Install it:\n"
+            "  pip install zef\n\n"
+            "Or install everything at once:\n"
+            "  pip install msd-sdk\n"
         )
     
     # Check for msd_hash which is only available in rust-based zef
@@ -71,7 +70,7 @@ def _verify_zef_installation():
         raise ImportError(
             "msd-sdk requires zef with msd_hash support (>= 0.1.29).\n\n"
             "Update with:\n"
-            "  pip install --upgrade msd-sdk --extra-index-url https://msd-protocol.org/simple/\n"
+            "  pip install --upgrade zef\n"
         )
     
     return zef

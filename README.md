@@ -11,12 +11,14 @@ Python SDK for Meta Structured Data.
 ## Installation
 
 ```bash
-pip install msd-sdk --extra-index-url https://msd-protocol.org/simple/
+pip install msd-sdk
 ```
 
-This installs both `msd-sdk` and its `zef` runtime dependency. The `--extra-index-url` flag tells pip to look for `zef` on the MSD package server (it's not on PyPI yet).
+This installs `msd-sdk` and its runtime dependency `zef` (a compiled Rust library) from PyPI.
 
-> **Tip**: Add `--extra-index-url https://msd-protocol.org/simple/` to your `pip.conf` or `requirements.txt` to avoid typing it every time.
+### What is zef?
+
+`zef` is a compiled (Rust) runtime library that provides the cryptographic primitives and data structures used by the MSD SDK.
 
 ## Development: Building from Source
 
