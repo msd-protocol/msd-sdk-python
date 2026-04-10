@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "msd-sdk"
-version = "0.2.0"
+version = "0.2.1"
 description = "Python SDK for Meta Structured Data"
 readme = "README.md"
 license = "MIT OR Apache-2.0"
@@ -25,7 +25,7 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
 ]
-dependencies = ["zef==0.1.29"]
+dependencies = ["zef==0.1.32"]
 
 [project.urls]
 Homepage = "https://msd-protocol.org"
