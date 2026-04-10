@@ -1,8 +1,20 @@
 """Core API functions for MSD SDK."""
 
+from __future__ import annotations
+
 import json
 import time
 import base64
+from typing import Any
+
+from msd_sdk._types import (
+    Ed25519KeyPair,
+    MsdHash,
+    SignatureInfo,
+    SignedData,
+    TypedFileDict,
+    VerifyResult,
+)
 
 
 def _to_native_python_hard(data):
@@ -161,7 +173,7 @@ def _zef_to_typed_dict(zef_obj) -> dict:
     return {'__type': type_name, 'data': base64.b64encode(bytes(zef_obj.content)).decode()}
 
 
-def key_from_env(env_var_name: str = "MSD_PRIVATE_KEY") -> dict:
+def key_from_env(env_var_name: str = "MSD_PRIVATE_KEY") -> Ed25519KeyPair:
     """
     Load an Ed25519 key pair from an environment variable.
     
@@ -197,7 +209,7 @@ def key_from_env(env_var_name: str = "MSD_PRIVATE_KEY") -> dict:
     return json.loads(key_json)
 
 
-def sign(data, metadata: dict, key: dict) -> dict:
+def sign(data: Any, metadata: dict[str, Any], key: Ed25519KeyPair) -> SignedData:
     """
     Sign data with metadata. Returns an ET.SignedData dict.
     
@@ -242,7 +254,7 @@ def sign(data, metadata: dict, key: dict) -> dict:
     return result
 
 
-def content_hash(data) -> dict:
+def content_hash(data: Any) -> MsdHash:
     """
     Compute the MSD content hash (BLAKE3-based) of data.
     
@@ -427,7 +439,7 @@ def _verify_file(signed_data: dict) -> dict:
     }
 
 
-def verify(data: dict) -> dict:
+def verify(data: dict[str, Any]) -> VerifyResult:
     """
     Verify the signature of signed data, an embedded dict, or a signed file.
     
@@ -576,7 +588,7 @@ def _embed_in_dict(granule_dict: dict) -> dict:
     }
 
 
-def embed(signed_data: dict) -> dict:
+def embed(signed_data: SignedData) -> dict[str, Any]:
     """
     Embed the signature from an ET.SignedData dict into its data.
     
@@ -666,7 +678,7 @@ def _extract_msd_from_dict(signed_dict_data: dict) -> dict:
     return _to_native_python_hard(result)
 
 
-def extract_metadata(signed_data: dict) -> dict:
+def extract_metadata(signed_data: dict[str, Any]) -> dict[str, Any]:
     """
     Extract metadata from signed data.
     
@@ -711,7 +723,7 @@ def extract_metadata(signed_data: dict) -> dict:
 
 
 
-def extract_signature(signed_data: dict) -> dict:
+def extract_signature(signed_data: dict[str, Any]) -> SignatureInfo:
     """
     Extract signature information from signed data.
     
@@ -768,7 +780,7 @@ def extract_signature(signed_data: dict) -> dict:
 
 
 
-def strip_metadata_and_signature(signed_data: dict) -> dict:
+def strip_metadata_and_signature(signed_data: dict[str, Any]) -> TypedFileDict:
     """
     Strip the embedded metadata and signature from a signed file,
     returning the original content as a typed dict.

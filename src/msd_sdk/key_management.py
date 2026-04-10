@@ -9,6 +9,9 @@ from __future__ import annotations
 import json
 import os
 import sys
+from typing import Any
+
+from msd_sdk._types import Ed25519KeyPair, Ed25519PublicKey
 
 
 def generate_key_pair(
@@ -16,7 +19,7 @@ def generate_key_pair(
     expires_in: str | None = None,
     *,
     unendorsed: bool = False,
-) -> dict:
+) -> Ed25519KeyPair:
     """
     Generate a new Ed25519 key pair.
     
@@ -71,7 +74,7 @@ def _resolve_key_path(name_or_path: str) -> str:
     return os.path.join(get_key_directory(), name_or_path)
 
 
-def save_key(name_or_path: str, key: dict) -> str:
+def save_key(name_or_path: str, key: Ed25519KeyPair) -> str:
     """
     Save a key to disk as JSON.
     
@@ -95,7 +98,7 @@ def save_key(name_or_path: str, key: dict) -> str:
     return path
 
 
-def load_key(name_or_path: str) -> dict:
+def load_key(name_or_path: str) -> Ed25519KeyPair:
     """
     Load a key from disk.
     
@@ -131,7 +134,7 @@ def get_key_directory() -> str:
         return os.path.join(os.path.expanduser("~"), ".config", "msd", "keys")
 
 
-def is_endorsed(key: dict) -> bool:
+def is_endorsed(key: Ed25519PublicKey) -> bool:
     """
     Check if a key is endorsed by a trusted root.
     
@@ -144,7 +147,7 @@ def is_endorsed(key: dict) -> bool:
     raise NotImplementedError("is_endorsed is not yet implemented")
 
 
-def get_endorsement_chain(key: dict) -> list:
+def get_endorsement_chain(key: Ed25519PublicKey) -> list[dict[str, Any]]:
     """
     Get the full endorsement chain for a key.
     

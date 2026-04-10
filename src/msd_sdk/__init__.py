@@ -105,6 +105,19 @@ from msd_sdk.key_management import (
     get_endorsement_chain,
 )
 
+# Re-export types for user annotations
+from msd_sdk._types import (
+    MsdHash,
+    Time,
+    Ed25519Signature,
+    Ed25519PublicKey,
+    Ed25519KeyPair,
+    SignedData,
+    TypedFileDict,
+    VerifyResult,
+    SignatureInfo,
+)
+
 # __all__ explicitly declares the public API of this package.
 # When users write `from msd_sdk import *`, only these names are imported.
 # Internal helpers like _verify_zef_installation and _zef are excluded.
@@ -126,6 +139,16 @@ __all__ = [
     "get_key_directory",
     "is_endorsed",
     "get_endorsement_chain",
+    # Types (for user annotations)
+    "MsdHash",
+    "Time",
+    "Ed25519Signature",
+    "Ed25519PublicKey",
+    "Ed25519KeyPair",
+    "SignedData",
+    "TypedFileDict",
+    "VerifyResult",
+    "SignatureInfo",
 ]
 
 
