@@ -201,6 +201,21 @@ my_content_hash = msd.content_hash(data)
 
 `content_hash` uses ideas based on Merkle hashing for aggregate data types. This enables structural sharing, content-addressed storage, and deduplication.
 
+## Editor Support
+
+The SDK ships with type annotations ([PEP 561](https://peps.python.org/pep-0561/)). Your editor will autocomplete dict keys on return values from `sign()`, `verify()`, `content_hash()`, and other functions — no guessing required.
+
+For your own type annotations:
+
+```python
+from msd_sdk import SignedData, VerifyResult, Ed25519KeyPair
+
+def process(data: SignedData) -> VerifyResult:
+    return msd.verify(data)
+```
+
+All values are plain Python dicts at runtime. The type annotations just help your editor and type checker understand the structure.
+
 ## Writing Tests
 
 See [docs/writing-tests.md](docs/writing-tests.md) for the test pattern and guide.
