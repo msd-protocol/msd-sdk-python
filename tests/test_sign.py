@@ -223,6 +223,77 @@ def run_validation_tests(test_cases):
 
 
 # ============================================================================
+# Test 5: extract_metadata() on raw ET.SignedData
+# ============================================================================
+
+test_cases_extract_meta = [
+  ('🍃-7a8b9c0d1a2b3c4d5e6f', 'extract_metadata from signed string',
+   'Hello world', {'creator': 'Alice', 'version': '1.0'}),
+  ('🍃-8b9c0d1a2b3c4d5e6f7a', 'extract_metadata from signed dict',
+   {'message': 'test', 'count': 42}, {'schema': 'v2', 'author': 'Bob'}),
+  ('🍃-9c0d1a2b3c4d5e6f7a8b', 'extract_metadata with empty metadata',
+   'data', {}),
+]
+
+
+def run_extract_meta_tests(test_cases):
+    """Test that extract_metadata() works on raw ET.SignedData output from sign()."""
+    failed = []
+    
+    for uid, desc, data, metadata in test_cases:
+        signed = msd.sign(data, metadata, sample_key)
+        
+        try:
+            extracted = msd.extract_metadata(signed)
+        except Exception as e:
+            failed.append({'description': desc, 'error': f'extract_metadata() raised: {e}'})
+            continue
+        
+        if extracted != metadata:
+            failed.append({'description': desc, 'error': f'Metadata mismatch: expected {metadata}, got {extracted}'})
+    
+    return failed
+
+
+# ============================================================================
+# Test 6: extract_signature() on raw ET.SignedData
+# ============================================================================
+
+test_cases_extract_sig = [
+  ('🍃-0d1a2b3c4d5e6f7a8b9c', 'extract_signature from signed string',
+   'Hello world', {'creator': 'Alice'}),
+  ('🍃-1a2b3c4d5e6f7a8b9c0e', 'extract_signature from signed dict',
+   {'key': 'value'}, {'schema': 'v1'}),
+]
+
+
+def run_extract_sig_tests(test_cases):
+    """Test that extract_signature() works on raw ET.SignedData output from sign()."""
+    failed = []
+    
+    for uid, desc, data, metadata in test_cases:
+        signed = msd.sign(data, metadata, sample_key)
+        
+        try:
+            sig_info = msd.extract_signature(signed)
+        except Exception as e:
+            failed.append({'description': desc, 'error': f'extract_signature() raised: {e}'})
+            continue
+        
+        # Must have signature, signature_time, and key
+        for required in ('signature', 'signature_time', 'key'):
+            if required not in sig_info:
+                failed.append({'description': desc, 'error': f'Missing key: {required}'})
+                break
+        else:
+            # Key's public key must match the signing key
+            if sig_info['key'].get('public_key') != sample_key['public_key']:
+                failed.append({'description': desc, 'error': 'Public key mismatch in extracted signature'})
+    
+    return failed
+
+
+# ============================================================================
 # Run all test groups
 # ============================================================================
 
@@ -231,6 +302,8 @@ all_groups = [
     ("Verify round-trip", run_verify_tests, test_cases_verify),
     ("Typed file data", run_typed_tests, test_cases_typed),
     ("Validation", run_validation_tests, test_cases_validation),
+    ("Extract metadata from ET.SignedData", run_extract_meta_tests, test_cases_extract_meta),
+    ("Extract signature from ET.SignedData", run_extract_sig_tests, test_cases_extract_sig),
 ]
 
 total_passed = 0

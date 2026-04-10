@@ -661,13 +661,13 @@ def _extract_msd_from_dict(signed_dict_data: dict) -> dict:
 
 def extract_metadata(signed_data: dict) -> dict:
     """
-    Extract metadata from a signed dict (Unicode steganography) or a signed
-    typed data dict (PngImage, PDF, etc.).
+    Extract metadata from signed data.
     
     Args:
-        signed_data: Either:
-            - A dict with an '__msd' key (from embed()), or
-            - A typed data dict with '__type' (from embed()).
+        signed_data: One of:
+            - An ET.SignedData dict (from sign()),
+            - A dict with an '__msd' key (from embed() on dicts), or
+            - A typed data dict with '__type' (from embed() on files).
     
     Returns:
         The metadata dictionary that was attached during signing.
@@ -676,6 +676,10 @@ def extract_metadata(signed_data: dict) -> dict:
         ValueError: If no embedded signature data is found.
     """
     import zef
+    
+    # Case 0: Raw ET.SignedData from sign()
+    if signed_data.get('__type') == 'ET.SignedData':
+        return signed_data.get('metadata', {})
     
     # Case 1: Dict signed with embed()
     if '__msd' in signed_data:
@@ -702,13 +706,13 @@ def extract_metadata(signed_data: dict) -> dict:
 
 def extract_signature(signed_data: dict) -> dict:
     """
-    Extract signature information from a signed dict (Unicode steganography)
-    or a signed typed data dict (PngImage, PDF, etc.).
+    Extract signature information from signed data.
     
     Args:
-        signed_data: Either:
-            - A dict with an '__msd' key (from embed()), or
-            - A typed data dict with '__type' (from embed()).
+        signed_data: One of:
+            - An ET.SignedData dict (from sign()),
+            - A dict with an '__msd' key (from embed() on dicts), or
+            - A typed data dict with '__type' (from embed() on files).
     
     Returns:
         A dictionary with signature information including:
@@ -718,6 +722,14 @@ def extract_signature(signed_data: dict) -> dict:
         ValueError: If no embedded signature data is found.
     """
     import zef
+    
+    # Case 0: Raw ET.SignedData from sign()
+    if signed_data.get('__type') == 'ET.SignedData':
+        return {
+            'signature': signed_data.get('signature'),
+            'signature_time': signed_data.get('signature_time'),
+            'key': signed_data.get('key'),
+        }
     
     # Case 1: Dict signed with embed()
     if '__msd' in signed_data:
