@@ -1,11 +1,14 @@
 """
-MSD SDK - Sign and verify structured data with Ed25519 signatures.
+MSD SDK — Sign and verify data with Ed25519 signatures.
+
+Every function is pure: data in, data out. You connect sources
+and sinks — MSD handles the cryptography.
 
 Quick Start
 -----------
     import msd_sdk as msd
-    
-    key = msd.key_from_env("MSD_PRIVATE_KEY")  # or generate in MSD Explorer
+
+    key = msd.key_from_env("MSD_PRIVATE_KEY")
     signed = msd.sign({"msg": "hello"}, {"author": "alice"}, key)
     result = msd.verify(signed)
     result['signature_is_valid']   # cryptographic validity
@@ -15,31 +18,29 @@ Keys & Trust
 ------------
     A valid signature from an unknown key tells verifiers nothing about who
     signed the data. For trusted signatures, generate keys in MSD Explorer
-    (https://network.msd-protocol.org/dashboard) — they're endorsed and linked to
-    your identity. generate_key_pair(unendorsed=True) is for testing only.
+    (https://network.msd-protocol.org/dashboard) — they're endorsed and linked
+    to your identity. generate_key_pair(unendorsed=True) is for testing only.
 
-Core Functions
---------------
-    sign               - Sign data with metadata, returns ET.SignedData
-    embed              - Embed signature into file or dict
-    verify             - Verify signature, returns rich dict
-    content_hash       - Get BLAKE3 Merkle hash of any data
+Signing & Verification
+----------------------
+    sign               — Sign data with metadata
+    embed              — Fold signature into the data
+    verify             — Verify and inspect a signature
+    content_hash       — BLAKE3 Merkle hash of any data
+
+Inspection
+----------
+    extract_metadata   — Read metadata from signed data
+    extract_signature  — Read signature details from signed data
+    strip_metadata_and_signature — Remove signature, recover original data
 
 Key Management
 --------------
-    generate_key_pair  - Create identity or working keys
-    save_key           - Save key to file (JSON format)
-    load_key           - Load key from file
-    key_from_env       - Load key from environment variable
-    get_key_directory  - Get OS-appropriate key storage path
-    is_endorsed        - Check if key has valid endorsement chain
-    get_endorsement_chain - Get full chain from root to key
-
-File Operations
---------------
-    extract_metadata   - Read embedded metadata from signed data
-    extract_signature  - Read embedded signature from signed data
-    strip_metadata_and_signature - Remove embedded data, get original
+    generate_key_pair  — Create a key pair for testing
+    save_key           — Save key to disk (JSON)
+    load_key           — Load key from disk
+    key_from_env       — Load key from environment variable
+    get_key_directory  — OS-appropriate key storage path
 
 Documentation: See docs/overview.md and docs/key-management.md
 """

@@ -20,27 +20,15 @@ def generate_key_pair(
     *,
     unendorsed: bool = False,
 ) -> Ed25519KeyPair:
-    """Generate a new Ed25519 key pair.
+    """Generate a new Ed25519 key pair for testing.
 
     ```python
-    # For testing (unendorsed, local-only):
     key = msd.generate_key_pair(unendorsed=True)
     ```
 
     For production, generate keys in
     [MSD Explorer](https://network.msd-protocol.org/dashboard) —
-    they'll be endorsed and linked to your identity.
-
-    Planned (not yet available):
-
-    ```python
-    identity = msd.generate_key_pair()                    # platform-endorsed
-    working = msd.generate_key_pair(                      # delegated key
-        endorsed_by=identity, expires_in="30d"
-    )
-    ```
-
-    Duration units: `"1h"` (hours), `"7d"` (days), `"3m"` (months).
+    keys generated there are endorsed and linked to your identity.
 
     Returns a plain dict with `__type`, `__uid`, `public_key`, and `private_key`.
     """
