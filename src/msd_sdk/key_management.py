@@ -14,6 +14,22 @@ from typing import Any
 from msd_sdk._types import Ed25519KeyPair, Ed25519PublicKey
 
 
+def key_to_compact(key: Ed25519KeyPair) -> str:
+    """Convert a key dict to compact string form for environment variables.
+
+    ```python
+    compact = msd.key_to_compact(key)
+    # 'msd-key-8d1dc8766070c87a4bb1-hhTRALPN...'
+    ```
+
+    The compact string is a single 119-character ASCII string that packs the
+    full key (UID, public key, private key) with a SHA-256 checksum.
+    Decode it back with ``key_from_env()`` or ``decode_compact_key()``.
+    """
+    from msd_sdk._compact_key import encode_compact_key
+    return encode_compact_key(key)
+
+
 def generate_key_pair(
     endorsed_by: Ed25519KeyPair | None = None,
     expires_in: str | None = None,

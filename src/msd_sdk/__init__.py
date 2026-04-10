@@ -8,7 +8,7 @@ Quick Start
 -----------
     import msd_sdk as msd
 
-    key = msd.key_from_env("MSD_PRIVATE_KEY")
+    key = msd.key_from_env()  # reads MSD_SIGNING_KEY
     signed = msd.sign({"msg": "hello"}, {"author": "alice"}, key)
     result = msd.verify(signed)
     result['signature_is_valid']   # cryptographic validity
@@ -40,6 +40,7 @@ Key Management
     save_key           — Save key to disk (JSON)
     load_key           — Load key from disk
     key_from_env       — Load key from environment variable
+    key_to_compact     — Convert key to compact string for env vars
     get_key_directory  — OS-appropriate key storage path
 
 Documentation: See docs/overview.md and docs/key-management.md
@@ -101,6 +102,7 @@ from msd_sdk.key_management import (
     generate_key_pair,
     save_key,
     load_key,
+    key_to_compact,
     get_key_directory,
     is_endorsed,
     get_endorsement_chain,
@@ -137,6 +139,7 @@ __all__ = [
     "generate_key_pair",
     "save_key",
     "load_key",
+    "key_to_compact",
     "get_key_directory",
     "is_endorsed",
     "get_endorsement_chain",

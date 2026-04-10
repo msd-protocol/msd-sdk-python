@@ -173,30 +173,48 @@ def _zef_to_typed_dict(zef_obj) -> dict:
     return {'__type': type_name, 'data': base64.b64encode(bytes(zef_obj.content)).decode()}
 
 
-def key_from_env(env_var_name: str = "MSD_PRIVATE_KEY") -> Ed25519KeyPair:
+def key_from_env(env_var_name: str = "MSD_SIGNING_KEY") -> Ed25519KeyPair:
     """Load a key pair from an environment variable.
 
     ```python
-    key = msd.key_from_env("MSD_PRIVATE_KEY")
+    key = msd.key_from_env()  # reads MSD_SIGNING_KEY
     ```
 
-    Expects the variable to contain a JSON-encoded key dict.
-    Defaults to `"MSD_PRIVATE_KEY"` if no name is given.
+    Auto-detects the format:
+
+    - **Compact** (starts with ``msd-key-``): the recommended format.
+    - **JSON** (starts with ``{``): a raw JSON key dict.
+    - **Base64 JSON** (anything else): base64-encoded JSON key dict.
+
+    Defaults to ``"MSD_SIGNING_KEY"``. Also checks ``"MSD_PRIVATE_KEY"``
+    as a legacy fallback when using the default name.
 
     Raises:
         KeyError: If the environment variable is not set.
+        ValueError: If the value cannot be decoded.
     """
-    import zef
-    
-    # Use Zef's managed effect system to get the environment variable
-    env_value = zef.FX.GetEnvVar(name=env_var_name) | zef.run
-    
-    if env_value is None:
-        raise KeyError(f"Environment variable '{env_var_name}' is not set")
-    
-    # Convert Zef String to Python string and parse as JSON
-    key_json = str(env_value)
-    return json.loads(key_json)
+    import os
+    from msd_sdk._compact_key import decode_compact_key
+
+    value = os.environ.get(env_var_name)
+
+    if value is None and env_var_name == "MSD_SIGNING_KEY":
+        value = os.environ.get("MSD_PRIVATE_KEY")
+
+    if value is None:
+        raise KeyError(
+            f"Environment variable '{env_var_name}' is not set. "
+            f"Set MSD_SIGNING_KEY to your compact key string (msd-key-...)."
+        )
+
+    value = value.strip()
+
+    if value.startswith('msd-key-'):
+        return decode_compact_key(value)
+    elif value.startswith('{'):
+        return json.loads(value)
+    else:
+        return json.loads(base64.b64decode(value))
 
 
 def sign(data: Any, metadata: dict[str, Any], key: Ed25519KeyPair) -> SignedData:

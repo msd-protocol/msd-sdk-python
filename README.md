@@ -40,12 +40,39 @@ This is the difference between `signature_is_valid` and `signature_is_trusted` i
 
 > For testing and development, `msd.generate_key_pair(unendorsed=True)` creates a local key that works for signing but can't be trusted by anyone outside your machine.
 
-#### Loading a Key from Environment
+#### Loading a Key
+
+The simplest way to load a key in production is from an environment variable:
 
 ```python
 import msd_sdk as msd
 
-my_key = msd.key_from_env("MSD_PRIVATE_KEY")
+my_key = msd.key_from_env()  # reads MSD_SIGNING_KEY
+```
+
+`key_from_env()` auto-detects three formats:
+
+- **Compact string** (starts with `msd-key-`): the recommended format for production. A single 119-character ASCII string containing the full key pair.
+- **JSON**: a raw JSON-encoded key dict.
+- **Base64 JSON**: a base64-encoded JSON key dict.
+
+Generate your compact key string in [MSD Explorer](https://network.msd-protocol.org/dashboard), then set it in your deployment:
+
+```bash
+# Docker / Kubernetes / CI
+MSD_SIGNING_KEY=msd-key-8d1dc8766070c87a4bb1-hhTRALPNtf9sN8h...
+```
+
+For local development, download the key file from MSD Explorer and use `load_key()`:
+
+```python
+my_key = msd.load_key("my-signing-key.json")
+```
+
+To convert between formats:
+
+```python
+compact = msd.key_to_compact(my_key)  # dict → compact string
 ```
 
 See the [Key Management Guide](docs/key-management.md) for storage best practices and the two-tier key model.

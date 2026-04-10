@@ -251,32 +251,60 @@ Keys are stored as plain JSON:
 }
 ```
 
-### Load from Environment Variable (Production Recommended)
+### Load from Environment Variable (Production)
 
-For production servers and CI/CD, inject keys via environment variables from your secrets manager:
+For production servers and CI/CD, set your key as an environment variable. The recommended format is the **compact key string** — a single 119-character ASCII string:
 
 ```python
-# Key stored as JSON string in environment variable
-my_key = msd.key_from_env("MSD_PRIVATE_KEY")
+# Reads MSD_SIGNING_KEY by default
+my_key = msd.key_from_env()
 ```
 
 ```bash
-# Set in environment (single line JSON)
-export MSD_PRIVATE_KEY='{"__type":"ET.Ed25519KeyPair","__uid":"🍃-8d1dc8766070c87a4bb1","private_key":"🗝️-61250af6bf8b9332be5c2b8a4877c56189867c8840cce541ab7fbe9270bb9b6c","public_key":"🔑-8614d100b3cdb5ff6c37c846760dd1990f637994bd985d9486f212133bfd6284"}'
+# Set the compact key in your environment
+export MSD_SIGNING_KEY=msd-key-8d1dc8766070c87a4bb1-hhTRALPNtf9sN8hGdg3RmQ9jeZS9mF2UhvISEzv9YoRhJQr2v4uTMr5cK4pId8VhiYZ8iEDM5UGrf76ScLubbLNasw
 ```
 
-Integration with common secrets managers:
+Generate your compact key in [MSD Explorer](https://network.msd-protocol.org/dashboard) during the working key setup.
+
+`key_from_env()` auto-detects three formats:
+
+| Format | Detected by | Example |
+|--------|-------------|---------|
+| **Compact string** | Starts with `msd-key-` | `msd-key-8d1dc876...LNasw` |
+| **JSON** | Starts with `{` | `{"__type":"ET.Ed25519KeyPair",...}` |
+| **Base64 JSON** | Anything else | `eyJfX3R5cGUiOi...` |
+
+To convert an existing key dict to compact format:
+
+```python
+compact = msd.key_to_compact(my_key)
+print(compact)
+# msd-key-8d1dc8766070c87a4bb1-hhTRALPN...
+```
+
+#### Deployment Examples
 
 ```bash
+# Docker
+docker run -e MSD_SIGNING_KEY=msd-key-... my-app
+
+# Docker Compose
+environment:
+  - MSD_SIGNING_KEY=msd-key-...
+
+# Kubernetes Secret
+kubectl create secret generic msd-key --from-literal=MSD_SIGNING_KEY=msd-key-...
+
+# GitHub Actions (set MSD_SIGNING_KEY as a repository secret)
+env:
+  MSD_SIGNING_KEY: ${{ secrets.MSD_SIGNING_KEY }}
+
 # AWS Secrets Manager
-export MSD_PRIVATE_KEY=$(aws secretsmanager get-secret-value --secret-id msd-signing-key --query SecretString --output text)
-
-# HashiCorp Vault
-export MSD_PRIVATE_KEY=$(vault kv get -field=key secret/msd/signing-key)
-
-# GitHub Actions (from repository secrets)
-# Already available as: ${{ secrets.MSD_PRIVATE_KEY }}
+export MSD_SIGNING_KEY=$(aws secretsmanager get-secret-value --secret-id msd-signing-key --query SecretString --output text)
 ```
+
+> **Legacy:** `MSD_PRIVATE_KEY` is also accepted as a fallback env var name when using the default.
 
 ---
 
