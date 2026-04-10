@@ -174,27 +174,17 @@ def _zef_to_typed_dict(zef_obj) -> dict:
 
 
 def key_from_env(env_var_name: str = "MSD_PRIVATE_KEY") -> Ed25519KeyPair:
-    """
-    Load an Ed25519 key pair from an environment variable.
-    
-    The environment variable should contain a JSON-encoded key pair.
-    
-    Args:
-        env_var_name: Name of the environment variable containing the key.
-                      Defaults to "MSD_PRIVATE_KEY".
-    
-    Returns:
-        A dictionary representing the key pair with structure:
-        {
-          '__type': 'ET.Ed25519KeyPair',
-          '__uid': '🍃-...',
-          'private_key': '🗝️-...',
-          'public_key': '🔑-...'
-        }
-    
+    """Load a key pair from an environment variable.
+
+    ```python
+    key = msd.key_from_env("MSD_PRIVATE_KEY")
+    ```
+
+    Expects the variable to contain a JSON-encoded key dict.
+    Defaults to `"MSD_PRIVATE_KEY"` if no name is given.
+
     Raises:
         KeyError: If the environment variable is not set.
-        json.JSONDecodeError: If the environment variable doesn't contain valid JSON.
     """
     import zef
     
@@ -210,25 +200,21 @@ def key_from_env(env_var_name: str = "MSD_PRIVATE_KEY") -> Ed25519KeyPair:
 
 
 def sign(data: Any, metadata: dict[str, Any], key: Ed25519KeyPair) -> SignedData:
-    """
-    Sign data with metadata. Returns an ET.SignedData dict.
-    
-    This is the primary signing function. It produces a signed data structure
-    that can be:
-    - Verified directly with verify()
-    - Embedded into a file or dict with embed()
-    
-    For typed file dicts (PngImage, PDF, etc.), any existing embedded data
-    is stripped before signing to ensure correct hash computation.
-    
-    Args:
-        data: The data to sign (any JSON-serializable value, or a typed file dict).
-        metadata: A dictionary of metadata about the data.
-        key: The Ed25519 key pair to sign with.
-    
-    Returns:
-        A dictionary with __type='ET.SignedData' containing the signed data,
-        metadata, timestamp, signature, and public key.
+    """Sign data with metadata, producing a self-contained signed envelope.
+
+    ```python
+    signed = msd.sign(
+        data={"invoice_id": "INV-042", "amount": 1250.00},
+        metadata={"approved_by": "CFO Jane Chen"},
+        key=my_key,
+    )
+    ```
+
+    `data` can be any Python value: strings, numbers, dicts, lists,
+    or typed file dicts (`PngImage`, `PDF`, etc.).
+
+    Pass the result to `verify()` to check the signature,
+    or to `embed()` to fold it into the data.
     """
     import zef
     
@@ -255,28 +241,16 @@ def sign(data: Any, metadata: dict[str, Any], key: Ed25519KeyPair) -> SignedData
 
 
 def content_hash(data: Any) -> MsdHash:
-    """
-    Compute the MSD content hash (BLAKE3-based) of data.
-    
-    Uses MSD hashing for all supported types. MSD hashing enables:
-    - Structural sharing: Reused sub-structures have the same hash
-    - Interoperability with signatures: Shared data can be verified independently
-    - Specifying aggregates by constituent hashes: A dict's hash depends on 
-      the hashes of its keys and values, not just raw bytes
-    - Type-aware hashing: Different types with the same value produce different hashes
-    
-    Args:
-        data: The data to hash. Can be:
-              - Primitives: str, int, float, bool, None
-              - Aggregates: dict, list (uses Merkle hashing of elements)
-              - Typed data: dicts with '__type' (e.g. PngImage, PDF)
-    
-    Returns:
-        A dict with structure:
-        {
-            '__type': 'MsdHash',
-            'hash': '<64-character hex string>'
-        }
+    """Compute the MSD content hash (BLAKE3 Merkle hash) of any data.
+
+    ```python
+    msd.content_hash({"message": "hello", "count": 42})
+    # {'__type': 'MsdHash', 'hash': '523d1d9f...'}
+    ```
+
+    MSD hashing is structure-aware: a dict's hash depends on the hashes
+    of its keys and values, not raw bytes. Reused sub-structures produce
+    the same hash. Works on primitives, dicts, lists, and typed file dicts.
     """
     import zef
     _validate_typed_values(data)
@@ -440,50 +414,22 @@ def _verify_file(signed_data: dict) -> dict:
 
 
 def verify(data: SignedData | dict[str, Any]) -> VerifyResult:
-    """
-    Verify the signature of signed data, an embedded dict, or a signed file.
-    
-    Supports three input types:
-    
-    1. SignedData dict (from sign()):
-       {'__type': 'ET.SignedData', 'data': ..., 'signature': ..., ...}
-    
-    2. Dict with Unicode steganography signature (from embed()):
-       {'x': 42, '__msd': '🔏...'}
-    
-    3. File dict with embedded signature (from embed()):
-       {'__type': 'PngImage', 'data': '<base64>'}
-    
-    Args:
-        data: An ET.SignedData dict, a dict with __msd key, or a file dict
-              with embedded signature.
-    
-    Returns:
-        A dict with verification results:
-        {
-            'is_verified_and_trusted': '✅' or '❌',
-            'signature_is_valid': bool,
-            'signature_is_trusted': False,
-            'data_hash': {'__type': 'MsdHash', 'hash': '...'},
-            'metadata_hash': {'__type': 'MsdHash', 'hash': '...'},
-            'signature_timestamp': {'__type': 'Time', ...},
-            'signing_key': {'__type': 'ET.Ed25519KeyPair', ...},
-            'signing_key_trust_chain': [],
-            'trust_chain_breaches': [],
-        }
-    
+    """Verify a signature and return a detailed report.
+
+    ```python
+    result = msd.verify(signed)
+    result['is_verified_and_trusted']  # '✅' or '❌'
+    result['signature_is_valid']       # True
+    result['signing_key']              # the public key used
+    ```
+
+    Accepts any signed format: an `ET.SignedData` dict from `sign()`,
+    a dict with `__msd` key from `embed()`, or a typed file dict
+    with embedded signature.
+
     Raises:
-        ValueError: If the input format is not recognized, the file type is
-                    unsupported, or no embedded signature is found.
-    
-    Examples:
-        signed = msd.sign(data, metadata, key)
-        result = msd.verify(signed)
-        assert result['signature_is_valid'] == True
-        
-        embedded = msd.embed(signed)
-        result = msd.verify(embedded)
-        assert result['signature_is_valid'] == True
+        ValueError: If the input format is not recognized or contains
+            no embedded signature.
     """
     # Handle both native Python dicts and Zef dict types
     # Zef dicts may not have .get() and hasattr may fail
@@ -589,23 +535,21 @@ def _embed_in_dict(granule_dict: dict) -> dict:
 
 
 def embed(signed_data: SignedData) -> dict[str, Any]:
-    """
-    Embed the signature from an ET.SignedData dict into its data.
-    
-    Auto-detects format:
-    - Typed file dict (PngImage, PDF, etc.) → binary embedding in file bytes
-    - Plain dict → Unicode steganography (__msd key)
-    
-    Args:
-        signed_data: An ET.SignedData dict from sign().
-    
-    Returns:
-        For file data: a typed dict (same __type) with embedded signature.
-        For dict data: the original dict plus an __msd key.
-    
+    """Fold the signature into the data — the proof travels with the data.
+
+    ```python
+    embedded = msd.embed(signed)
+    # Dict: {"invoice_id": "INV-042", "__msd": "🔏..."}
+    # File: {'__type': 'PngImage', 'data': '<base64 with signature>'}
+    ```
+
+    Dicts get an invisible `__msd` key via Unicode steganography.
+    Files get the signature embedded in their binary format.
+    Both survive JSON round-trips and standard file viewers.
+
     Raises:
-        ValueError: If input is not an ET.SignedData dict, or if the data
-                    type cannot be embedded (e.g. string, int).
+        ValueError: If the data type doesn't support embedding
+            (e.g. strings, numbers). Use the `ET.SignedData` dict directly.
     """
     type_field = signed_data.get('__type') if isinstance(signed_data, dict) else None
     
@@ -679,20 +623,14 @@ def _extract_msd_from_dict(signed_dict_data: dict) -> dict:
 
 
 def extract_metadata(signed_data: SignedData | dict[str, Any]) -> dict[str, Any]:
-    """
-    Extract metadata from signed data.
-    
-    Args:
-        signed_data: One of:
-            - An ET.SignedData dict (from sign()),
-            - A dict with an '__msd' key (from embed() on dicts), or
-            - A typed data dict with '__type' (from embed() on files).
-    
-    Returns:
-        The metadata dictionary that was attached during signing.
-    
-    Raises:
-        ValueError: If no embedded signature data is found.
+    """Read the metadata from any signed data — without verifying the signature.
+
+    ```python
+    meta = msd.extract_metadata(signed)
+    # {'approved_by': 'CFO Jane Chen'}
+    ```
+
+    Works on `ET.SignedData` dicts, dicts with `__msd`, and typed file dicts.
     """
     import zef
     
@@ -724,21 +662,16 @@ def extract_metadata(signed_data: SignedData | dict[str, Any]) -> dict[str, Any]
 
 
 def extract_signature(signed_data: SignedData | dict[str, Any]) -> SignatureInfo:
-    """
-    Extract signature information from signed data.
-    
-    Args:
-        signed_data: One of:
-            - An ET.SignedData dict (from sign()),
-            - A dict with an '__msd' key (from embed() on dicts), or
-            - A typed data dict with '__type' (from embed() on files).
-    
-    Returns:
-        A dictionary with signature information including:
-        'signature', 'signature_time', and 'key'.
-    
-    Raises:
-        ValueError: If no embedded signature data is found.
+    """Read signature details from any signed data — without verifying.
+
+    ```python
+    sig = msd.extract_signature(signed)
+    sig['signature']       # the Ed25519 signature
+    sig['signature_time']  # when it was signed
+    sig['key']             # public key used
+    ```
+
+    Works on `ET.SignedData` dicts, dicts with `__msd`, and typed file dicts.
     """
     import zef
     
@@ -781,16 +714,15 @@ def extract_signature(signed_data: SignedData | dict[str, Any]) -> SignatureInfo
 
 
 def strip_metadata_and_signature(signed_data: dict[str, Any]) -> TypedFileDict:
-    """
-    Strip the embedded metadata and signature from a signed file,
-    returning the original content as a typed dict.
-    
-    Args:
-        signed_data: A typed data dict with '__type' (from embed()).
-    
-    Returns:
-        A typed data dict with the same '__type' but clean content
-        (all embedded MSD data removed).
+    """Remove the embedded signature from a signed file, returning the original content.
+
+    ```python
+    original = msd.strip_metadata_and_signature(signed_png)
+    # {'__type': 'PngImage', 'data': '<clean base64>'}
+    ```
+
+    Only works on typed file dicts (`PngImage`, `PDF`, etc.),
+    not on dicts with `__msd`.
     """
     import zef
     

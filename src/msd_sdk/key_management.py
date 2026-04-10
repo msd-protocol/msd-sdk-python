@@ -20,27 +20,29 @@ def generate_key_pair(
     *,
     unendorsed: bool = False,
 ) -> Ed25519KeyPair:
-    """
-    Generate a new Ed25519 key pair.
-    
-    By default, creates an identity key endorsed by the MSD platform.
-    Use `endorsed_by` to create a working key endorsed by another key.
-    
-        # Identity key (platform-endorsed, never expires)
-        identity = msd.generate_key_pair()
-        
-        # Working key (endorsed by identity, expires in 30 days)
-        working = msd.generate_key_pair(endorsed_by=identity, expires_in="30d")
-    
-    Duration units: "1h" (hours), "7d" (days), "3m" (months)
-    
-    For testing or offline use, explicitly request an unendorsed key:
-    
-        # Unendorsed key (not recommended for production)
-        test_key = msd.generate_key_pair(unendorsed=True)
-    
-    Returns a key dict with __type, __uid, public_key, private_key,
-    and endorsement info (unless unendorsed=True).
+    """Generate a new Ed25519 key pair.
+
+    ```python
+    # For testing (unendorsed, local-only):
+    key = msd.generate_key_pair(unendorsed=True)
+    ```
+
+    For production, generate keys in
+    [MSD Explorer](https://network.msd-protocol.org/dashboard) —
+    they'll be endorsed and linked to your identity.
+
+    Planned (not yet available):
+
+    ```python
+    identity = msd.generate_key_pair()                    # platform-endorsed
+    working = msd.generate_key_pair(                      # delegated key
+        endorsed_by=identity, expires_in="30d"
+    )
+    ```
+
+    Duration units: `"1h"` (hours), `"7d"` (days), `"3m"` (months).
+
+    Returns a plain dict with `__type`, `__uid`, `public_key`, and `private_key`.
     """
     if not unendorsed and endorsed_by is None:
         # Default case: should be platform-endorsed, but not implemented yet
@@ -75,20 +77,15 @@ def _resolve_key_path(name_or_path: str) -> str:
 
 
 def save_key(name_or_path: str, key: Ed25519KeyPair) -> str:
-    """
-    Save a key to disk as JSON.
-    
-    If `name_or_path` is a simple name (no slashes), saves to the
-    OS-appropriate default directory:
-    
-        msd.save_key("alice.json", key)
-        # → ~/.config/msd/keys/alice.json (macOS/Linux)
-        # → %APPDATA%\\msd\\keys\\alice.json (Windows)
-    
-    If `name_or_path` is a full path, saves there directly:
-    
-        msd.save_key("/secure/keys/alice.json", key)
-    
+    """Save a key to disk as JSON.
+
+    ```python
+    path = msd.save_key("alice.json", key)
+    # ~/.config/msd/keys/alice.json (macOS/Linux)
+    ```
+
+    Simple names save to the OS default key directory.
+    Full paths (with `/`) save there directly.
     Returns the full path where the key was saved.
     """
     path = _resolve_key_path(name_or_path)
@@ -99,16 +96,14 @@ def save_key(name_or_path: str, key: Ed25519KeyPair) -> str:
 
 
 def load_key(name_or_path: str) -> Ed25519KeyPair:
-    """
-    Load a key from disk.
-    
-    Mirrors `save_key` - simple names use the default directory,
+    """Load a key from disk.
+
+    ```python
+    key = msd.load_key("alice.json")
+    ```
+
+    Mirrors `save_key` — simple names use the default key directory,
     full paths are used directly.
-    
-        key = msd.load_key("alice.json")
-        key = msd.load_key("/secure/keys/alice.json")
-    
-    Returns the key dict.
     """
     path = _resolve_key_path(name_or_path)
     with open(path, 'r', encoding='utf-8') as f:
@@ -116,14 +111,13 @@ def load_key(name_or_path: str) -> Ed25519KeyPair:
 
 
 def get_key_directory() -> str:
-    """
-    Get the default key storage directory for the current OS.
-    
-        msd.get_key_directory()
-        # → "~/.config/msd/keys/" (macOS/Linux)
-        # → "%APPDATA%\\msd\\keys\\" (Windows)
-    
-    Returns the expanded absolute path.
+    """Get the default key storage directory for the current OS.
+
+    ```python
+    msd.get_key_directory()
+    # ~/.config/msd/keys (macOS/Linux)
+    # %APPDATA%\\msd\\keys (Windows)
+    ```
     """
     if sys.platform == "win32":
         # Windows: use APPDATA, fall back to home if not set
@@ -135,30 +129,35 @@ def get_key_directory() -> str:
 
 
 def is_endorsed(key: Ed25519PublicKey) -> bool:
-    """
-    Check if a key is endorsed by a trusted root.
-    
+    """Check if a key is endorsed by a trusted root.
+
+    ```python
+    if msd.is_endorsed(key):
+        print("Key is part of a valid endorsement chain")
+    ```
+
     Traces the endorsement chain from the key up to a trust anchor.
-    Returns True if the chain is valid and ends at a trusted root.
-    
-        if msd.is_endorsed(key):
-            print("Key is part of a valid endorsement chain")
+
+    *Not yet implemented.*
     """
     raise NotImplementedError("is_endorsed is not yet implemented")
 
 
 def get_endorsement_chain(key: Ed25519PublicKey) -> list[dict[str, Any]]:
-    """
-    Get the full endorsement chain for a key.
-    
-    Returns a list from root to key, showing who endorsed whom:
-    
-        chain = msd.get_endorsement_chain(working_key)
-        # [
-        #     {'type': 'MSD Platform Root', 'uid': '🍃-...', 'status': 'trusted'},
-        #     {'type': 'Identity Key', 'uid': '🍃-...', 'endorsed_by': '🍃-...'},
-        #     {'type': 'Working Key', 'uid': '🍃-...', 'endorsed_by': '🍃-...'}
-        # ]
+    """Get the full endorsement chain for a key.
+
+    ```python
+    chain = msd.get_endorsement_chain(working_key)
+    # [
+    #     {'type': 'MSD Platform Root', 'uid': '🍃-...'},
+    #     {'type': 'Identity Key', 'uid': '🍃-...'},
+    #     {'type': 'Working Key', 'uid': '🍃-...'},
+    # ]
+    ```
+
+    Returns a list from root to key, showing who endorsed whom.
+
+    *Not yet implemented.*
     """
     raise NotImplementedError("get_endorsement_chain is not yet implemented")
 
