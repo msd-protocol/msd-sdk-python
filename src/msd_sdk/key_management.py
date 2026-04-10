@@ -15,7 +15,7 @@ from msd_sdk._types import Ed25519KeyPair, Ed25519PublicKey
 
 
 def generate_key_pair(
-    endorsed_by: dict | None = None,
+    endorsed_by: Ed25519KeyPair | None = None,
     expires_in: str | None = None,
     *,
     unendorsed: bool = False,
