@@ -145,6 +145,7 @@ See the **[Typed Data Guide](docs/typed-data.md)** for details.
 ```python
 msd.verify(signed)
 # => {
+#   'is_verified_and_trusted': '❌',  # ✅ when valid AND trusted, ❌ otherwise
 #   'signature_is_valid': True,       # cryptographic validity
 #   'signature_is_trusted': False,    # trust chain verification
 #   'data_hash': {...},               # BLAKE3 hash of the data

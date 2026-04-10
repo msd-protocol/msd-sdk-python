@@ -296,10 +296,12 @@ def _verify_signed_data(data: dict) -> dict:
     d['__type'] = 'ET.SignedGranule'
     granule_internal = zef.from_json_like(d)
     is_valid = bool(granule_internal | zef.verify_granite_signature | zef.collect)
+    is_trusted = False  # trust chains not yet implemented
     
     return {
+        'is_verified_and_trusted': '✅' if (is_valid and is_trusted) else '❌',
         'signature_is_valid': is_valid,
-        'signature_is_trusted': False,
+        'signature_is_trusted': is_trusted,
         'data_hash': content_hash(data['data']),
         'metadata_hash': content_hash(data['metadata']),
         'signature_timestamp': data['signature_time'],
@@ -363,10 +365,12 @@ def _verify_dict(signed_dict_data: dict) -> dict:
     
     # 4. Verify
     is_valid = bool(granule_entity | zef.verify_granite_signature | zef.collect)
+    is_trusted = False  # trust chains not yet implemented
     
     return {
+        'is_verified_and_trusted': '✅' if (is_valid and is_trusted) else '❌',
         'signature_is_valid': is_valid,
-        'signature_is_trusted': False,
+        'signature_is_trusted': is_trusted,
         'data_hash': content_hash(original_data),
         'metadata_hash': content_hash(sig_and_metadata_py.get('metadata', {})),
         'signature_timestamp': sig_and_metadata_py.get('signature_time'),
@@ -408,10 +412,12 @@ def _verify_file(signed_data: dict) -> dict:
     
     # 5. Verify signature
     is_valid = bool(complete_granule | zef.verify_granite_signature | zef.collect)
+    is_trusted = False  # trust chains not yet implemented
     
     return {
+        'is_verified_and_trusted': '✅' if (is_valid and is_trusted) else '❌',
         'signature_is_valid': is_valid,
-        'signature_is_trusted': False,
+        'signature_is_trusted': is_trusted,
         'data_hash': content_hash(clean_typed_dict),
         'metadata_hash': content_hash(embedded_py.get('metadata', {})),
         'signature_timestamp': embedded_py.get('signature_time'),
@@ -443,6 +449,7 @@ def verify(data: dict) -> dict:
     Returns:
         A dict with verification results:
         {
+            'is_verified_and_trusted': '✅' or '❌',
             'signature_is_valid': bool,
             'signature_is_trusted': False,
             'data_hash': {'__type': 'MsdHash', 'hash': '...'},

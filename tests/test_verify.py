@@ -220,8 +220,8 @@ def run_tests(test_cases):
         
         # Check structure of result dict
         required_keys = {
-            'signature_is_valid', 'signature_is_trusted', 'data_hash',
-            'metadata_hash', 'signature_timestamp', 'signing_key',
+            'is_verified_and_trusted', 'signature_is_valid', 'signature_is_trusted',
+            'data_hash', 'metadata_hash', 'signature_timestamp', 'signing_key',
             'signing_key_trust_chain', 'trust_chain_breaches'
         }
         missing = required_keys - set(result.keys())
@@ -229,6 +229,15 @@ def run_tests(test_cases):
             failed_tests.append({
                 'description': test['description'],
                 'error': f'Missing keys in result: {missing}',
+            })
+            continue
+        
+        # is_verified_and_trusted must match: ✅ only when valid AND trusted
+        expected_emoji = '✅' if (expected and result.get('signature_is_trusted', False)) else '❌'
+        if result['is_verified_and_trusted'] != expected_emoji:
+            failed_tests.append({
+                'description': test['description'],
+                'error': f'is_verified_and_trusted should be {expected_emoji!r}, got {result["is_verified_and_trusted"]!r}',
             })
             continue
         
