@@ -167,3 +167,36 @@ class SignatureInfo(TypedDict):
     """When the signature was created."""
     key: Ed25519PublicKey
     """The public key that created the signature."""
+
+
+# ---------------------------------------------------------------------------
+# Trust network entity types
+# ---------------------------------------------------------------------------
+
+GoogleAccount = TypedDict('GoogleAccount', {
+    '__type': Literal['ET.GoogleAccount'],
+    'email': str,
+})
+"""A plain dict — a Google account trusted in the trust network.
+
+Keys::
+
+    '__type': 'ET.GoogleAccount'
+    'email':  str  — e.g. 'alice@gmail.com'
+"""
+
+Organization = TypedDict('Organization', {
+    '__type': Literal['ET.Organization'],
+    'url': str,
+})
+"""A plain dict — an organization trusted in the trust network.
+
+Keys::
+
+    '__type': 'ET.Organization'
+    'url':    str  — e.g. 'https://acme.com'
+"""
+
+# Union of all trust network entity types
+TrustNetworkEntity = GoogleAccount | Organization
+"""A trusted entity — either a Google account or an organization."""

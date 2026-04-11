@@ -136,6 +136,9 @@ from msd_sdk._types import (
     TypedFileDict,
     VerifyResult,
     SignatureInfo,
+    GoogleAccount,
+    Organization,
+    TrustNetworkEntity,
 )
 
 # __all__ explicitly declares the public API of this package.
@@ -176,6 +179,9 @@ __all__ = [
     "TypedFileDict",
     "VerifyResult",
     "SignatureInfo",
+    "GoogleAccount",
+    "Organization",
+    "TrustNetworkEntity",
 ]
 
 

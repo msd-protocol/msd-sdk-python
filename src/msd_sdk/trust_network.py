@@ -12,6 +12,7 @@ import os
 from typing import Any
 
 from msd_sdk._config import get_msd_config_root
+from msd_sdk._types import TrustNetworkEntity
 
 
 # ─── Entity Type Registry ─────────────────────────────────────────────────────
@@ -149,12 +150,24 @@ def _write_trust_network(path: str, entries: list[dict]) -> None:
 
 # ─── Public API ───────────────────────────────────────────────────────────────
 
-def add_to_trust_network(entity: dict) -> None:
+def add_to_trust_network(entity: TrustNetworkEntity) -> None:
     """Add a trusted entity. Idempotent — adding twice is a no-op.
+
+    Entities are normalized before storage: emails are lowercased,
+    URLs have trailing slashes stripped. Matching uses the normalized
+    form, so ``'ALICE@Gmail.COM'`` and ``'alice@gmail.com'`` are the
+    same entity.
+
+    Raises ``ValueError`` if the entity dict is malformed (missing
+    ``__type``, unknown type, or missing identity field).
 
     ```python
     msd.add_to_trust_network({'__type': 'ET.GoogleAccount', 'email': 'alice@gmail.com'})
+    msd.add_to_trust_network({'__type': 'ET.Organization', 'url': 'https://acme.com'})
     ```
+
+    The trust network file is created on the first call. Directory
+    structure is created automatically.
     """
     _validate_entity(entity)
     entity = _normalize_entity(entity)
@@ -165,8 +178,10 @@ def add_to_trust_network(entity: dict) -> None:
         _write_trust_network(path, new_entries)
 
 
-def remove_from_trust_network(entity: dict) -> None:
+def remove_from_trust_network(entity: TrustNetworkEntity) -> None:
     """Remove a trusted entity. No-op if not present.
+
+    Matching uses the same normalization rules as ``add_to_trust_network``.
 
     ```python
     msd.remove_from_trust_network({'__type': 'ET.GoogleAccount', 'email': 'alice@gmail.com'})
@@ -181,19 +196,29 @@ def remove_from_trust_network(entity: dict) -> None:
         _write_trust_network(path, new_entries)
 
 
-def get_trust_network() -> list[dict]:
+def get_trust_network() -> list[TrustNetworkEntity]:
     """Return all trusted entities. Empty list if no file exists.
+
+    Entities are stored in their normalized form: emails lowercased,
+    URLs without trailing slashes.
 
     ```python
     trusted = msd.get_trust_network()
     # [{'__type': 'ET.Organization', 'url': 'https://acme.com'}]
     ```
+
+    Raises ``ValueError`` if the trust network file exists but
+    contains invalid JSON or is not a JSON array.
     """
     return _read_trust_network(_get_trust_network_path())
 
 
 def clear_trust_network() -> None:
     """Remove all trusted entities.
+
+    Deletes the trust network file. After calling this,
+    ``get_trust_network()`` returns ``[]`` and ``is_trusted()``
+    returns ``False`` for all entities.
 
     ```python
     msd.clear_trust_network()
@@ -204,8 +229,13 @@ def clear_trust_network() -> None:
         os.remove(path)
 
 
-def is_trusted(entity: dict) -> bool:
+def is_trusted(entity: TrustNetworkEntity) -> bool:
     """Check if an entity is in the trust network.
+
+    Uses normalized matching — ``'ALICE@Gmail.COM'`` matches
+    ``'alice@gmail.com'``.
+
+    Returns ``False`` if no trust network file exists.
 
     ```python
     msd.is_trusted({'__type': 'ET.GoogleAccount', 'email': 'alice@gmail.com'})
